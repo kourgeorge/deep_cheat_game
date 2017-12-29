@@ -1,8 +1,8 @@
 from Action import Action
 
+
 class Action_Item:
     def __init__(self, player_id, action_type, cards):
-
         self.player_id = player_id
         self.action_type = action_type
         self.cards = cards
@@ -13,7 +13,7 @@ class ActionLogger:
     def __init__(self):
         self.history = []
 
-    #def add(self, action_item):
+    # def add(self, action_item):
     #    self.history.append(action_item)
 
     def add(self, player, action_type, cards):
@@ -24,11 +24,20 @@ class ActionLogger:
         play = self.history[-1]
         return play.player_id, play.action_type, play.cards
 
-    def get_last_put_action(self):
+    def get_current_hand(self):
         for item in reversed(self.history):
-            if item.action_type == Action.Bullshit:
-                return -1
+            if item.action_type == Action.BULLSHIT:
+                return None
             if item.action_type == Action.PASS:
                 pass
             if item.action_type == Action.PUT:
-                return item.player_id, item.action_type, item.cards
+                return item.cards[0]
+
+    def get_last_put_info(self):
+        for item in reversed(self.history):
+            if item.action_type == Action.BULLSHIT:
+                return None, None
+            if item.action_type == Action.PASS:
+                pass
+            if item.action_type == Action.PUT:
+                return item.cards, item.player_id

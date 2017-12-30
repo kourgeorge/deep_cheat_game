@@ -44,3 +44,11 @@ class ActionLogger:
 
     def get_game_history(self):
         return self._history
+
+    def last_pass_seq(self):
+        counter = 0
+        for item in reversed(self._history):
+            if item.action_type == Action.PASS:
+                counter += 1
+            else:
+                return counter

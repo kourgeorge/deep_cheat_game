@@ -20,9 +20,13 @@ class Cheat:
         self._illegal_action = False
         self._reward = 0
         self._illegal_reward = -3
-        self._max_reward = 3
+        self._max_reward = 30
+        self._pass_reward = -1
 
     def reset(self):
+        for player in self._players:
+            player.reset()
+
         cheat_utils.deal_cards(self._players, NUM_CARDS)
         self._actions_logger = ActionLogger()
         self._done = False
@@ -31,6 +35,7 @@ class Cheat:
         self._illegal_action = False
         self._reward = 0
 
+        print("+++++++++++++++++++++++++++New Game++++++++++++++++++++++++++++++++++")
         return self.state()
 
     def step(self, action, actual_cards, reported_cards):
@@ -43,16 +48,17 @@ class Cheat:
 
         if action == Action.PASS:
             print("Pass")
-            if self.first_put():
+            if self.empty_pile() or self.had_full_pass_round():
                 self._illegal_action = True
                 self._reward = self._illegal_reward
             else:
                 self._actions_logger.add(self._turn, Action.PASS, None)
                 self._turn = (self._turn + 1) % self._num_players
+                self._reward = self._pass_reward
 
         if action == Action.PUT:
             print("Put: Reported:", str(reported_cards), "Actual: ", str(actual_cards))
-            if cheat_utils.legal_put(self.first_put(), self.current_hand(), reported_cards, actual_cards):
+            if cheat_utils.legal_put(self.empty_pile(), self.current_hand(), reported_cards, actual_cards):
                 self._pile.extend(actual_cards)
                 current_player.remove_cards(actual_cards)
                 self._actions_logger.add(self._turn, Action.PUT, reported_cards)
@@ -62,27 +68,34 @@ class Cheat:
                     if np.array_equal(reported_cards, actual_cards):
                         self._done = True
                         self._reward = self._max_reward
+                        print("+++++++++++++++++++++++++++END++++++++++++++++++++++++++++++++++")
                     else:
                         current_player.recieve_cards(self._pile)
                         self._pile = []
+                        self._illegal_action = True
+                        self._reward = self._illegal_reward
             else:
                 self._illegal_action = True
                 self._reward = self._illegal_reward
 
         if action == Action.BULLSHIT:
             print("Bullshit")
-            if not self.first_put():
+            if not self.empty_pile():
                 cards, put_player_id = self._actions_logger.get_last_put_info()
-                num_put = len(cards)
-                self._actions_logger.add(current_player, Action.BULLSHIT, None)
-                if np.array_equal(cards, self._pile[-num_put:]):
-                    current_player.recieve_cards(self._pile)
-                    self._pile = []
-                    self._turn = put_player_id
+                if put_player_id == self._turn:
+                    self._illegal_action = True
+                    self._reward = self._illegal_reward
                 else:
-                    self._players[put_player_id].recieve_cards(self._pile)
-                    self._pile = []
-                    self._turn = self._turn
+                    num_put = len(cards)
+                    self._actions_logger.add(current_player, Action.BULLSHIT, None)
+                    if np.array_equal(cards, self._pile[-num_put:]):
+                        current_player.recieve_cards(self._pile)
+                        self._pile = []
+                        self._turn = put_player_id
+                    else:
+                        self._players[put_player_id].recieve_cards(self._pile)
+                        self._pile = []
+                        self._turn = self._turn
             else:
                 self._illegal_action = True
                 self._reward = self._illegal_reward
@@ -92,8 +105,14 @@ class Cheat:
     def done(self):
         return self._done
 
-    def first_put(self):
+    def empty_pile(self):
         return len(self._pile) == 0
+
+    def had_full_pass_round(self):
+        if self._actions_logger.last_pass_seq() >= self._num_players:
+            return True
+        else:
+            return False
 
     def current_hand(self):
         return self._actions_logger.get_current_hand()
@@ -103,4 +122,3 @@ class Cheat:
         return self._done, self._turn, len(
             self._pile), players_hands, self._actions_logger.get_current_hand(), \
                self._actions_logger.get_game_history(), self._illegal_action, self._reward
-

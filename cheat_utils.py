@@ -18,6 +18,14 @@ def num_reported_equals_actual(reported_cards, actual_cards):
     return len(reported_cards) == len(actual_cards)
 
 
+def extract_episode_history(ep_history):
+    episode_states = [inter_data[0] for inter_data in ep_history]
+    episode_actions = [inter_data[1] for inter_data in ep_history]
+    episode_rewards = np.array([inter_data[2] for inter_data in ep_history])
+    episode_length = len(episode_rewards)
+
+    return episode_states, episode_actions, episode_rewards, episode_length
+
 def rotate(l, n):
     return l[n:] + l[:n]
 

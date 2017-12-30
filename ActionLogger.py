@@ -24,7 +24,7 @@ class ActionLogger:
         play = self._history[-1]
         return play.player_id, play.action_type, play.cards
 
-    def get_current_hand(self):
+    def get_current_rank(self):
         for item in reversed(self._history):
             if item.action_type == Action.BULLSHIT:
                 return None

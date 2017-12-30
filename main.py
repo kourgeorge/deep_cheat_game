@@ -63,5 +63,6 @@ def main():
                 print("Illegal moves: ", np.mean(illegal_count[-50:]),". Rounds: ", np.mean(rounds[-50:]), ". Stats: ", np.sum(wins[-50:], axis=0))
                 x=1
 
+
 if __name__ == '__main__':
     main()

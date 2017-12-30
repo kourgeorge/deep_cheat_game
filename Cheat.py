@@ -58,7 +58,7 @@ class Cheat:
 
         if action == Action.PUT:
             print("Put: Reported:", str(reported_cards), "Actual: ", str(actual_cards))
-            if cheat_utils.legal_put(self.empty_pile(), self.current_hand(), reported_cards, actual_cards):
+            if cheat_utils.legal_put(self.empty_pile(), self.current_rank(), reported_cards, actual_cards):
                 self._pile.extend(actual_cards)
                 current_player.remove_cards(actual_cards)
                 self._actions_logger.add(self._turn, Action.PUT, reported_cards)
@@ -70,7 +70,7 @@ class Cheat:
                         self._reward = self._max_reward
                         print("+++++++++++++++++++++++++++END++++++++++++++++++++++++++++++++++")
                     else:
-                        current_player.recieve_cards(self._pile)
+                        current_player.receive_cards(self._pile)
                         self._pile = []
                         self._illegal_action = True
                         self._reward = self._illegal_reward
@@ -89,11 +89,11 @@ class Cheat:
                     num_put = len(cards)
                     self._actions_logger.add(current_player, Action.BULLSHIT, None)
                     if np.array_equal(cards, self._pile[-num_put:]):
-                        current_player.recieve_cards(self._pile)
+                        current_player.receive_cards(self._pile)
                         self._pile = []
                         self._turn = put_player_id
                     else:
-                        self._players[put_player_id].recieve_cards(self._pile)
+                        self._players[put_player_id].receive_cards(self._pile)
                         self._pile = []
                         self._turn = self._turn
             else:
@@ -114,11 +114,11 @@ class Cheat:
         else:
             return False
 
-    def current_hand(self):
-        return self._actions_logger.get_current_hand()
+    def current_rank(self):
+        return self._actions_logger.get_current_rank()
 
     def state(self):
         players_hands = cheat_utils.rotate([player.hand_size() for player in self._players], self._turn)
         return self._done, self._turn, len(
-            self._pile), players_hands, self._actions_logger.get_current_hand(), \
+            self._pile), players_hands, self._actions_logger.get_current_rank(), \
                self._actions_logger.get_game_history(), self._illegal_action, self._reward

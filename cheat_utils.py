@@ -7,7 +7,7 @@ def deal_cards(players, num_cards):
     card_deck = np.random.permutation(np.repeat(range(num_cards), config.num_cards_in_type, axis=0))
     num_cards = int(np.floor(len(card_deck) / num_players))
     for i in range(num_players):
-        players[i].recieve_cards(card_deck[i * num_cards:(i + 1) * num_cards])
+        players[i].receive_cards(card_deck[i * num_cards:(i + 1) * num_cards])
 
 
 def all_reported_cards_of_same_type(reported_cards):
@@ -30,23 +30,23 @@ def rotate(l, n):
     return l[n:] + l[:n]
 
 
-def legal_put(first_put, current_hand, reported_cards, actual_cards):
+def legal_put(first_put, current_rank, reported_cards, actual_cards):
     if first_put:
         if len(reported_cards) == len(actual_cards):
             return True
     else:
         if all_reported_cards_of_same_type(reported_cards) \
                 and num_reported_equals_actual(reported_cards, actual_cards) \
-                and (reported_cards[0] == current_hand):
+                and (reported_cards[0] == current_rank):
             return True
 
     return False
 
 
-def encode_state(game_history, current_hand, pile_size, palyers_hands, own_cards):
-    if current_hand is None:
-        current_hand = -1
-    return [current_hand] + [pile_size] + palyers_hands + encode_hand_cards(own_cards)
+def encode_state(game_history, current_rank, pile_size, palyers_hands, own_cards):
+    if current_rank is None:
+        current_rank = -1
+    return [current_rank] + [pile_size] + palyers_hands + encode_hand_cards(own_cards)
 
 
 def encode_hand_cards(hands_cards):

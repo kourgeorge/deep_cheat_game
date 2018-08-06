@@ -7,14 +7,29 @@ class PlayerTrainer:
         self._agent_network = agent_network
         self._sess = sess
         self._gradBuffer_act = {}
+        self._gradBuffer_cards = {}
 
         self._gradBuffer_act = sess.run(self._agent_network.action_model_trainable_vars())
         for ix, grad in enumerate(self._gradBuffer_act):
             self._gradBuffer_act[ix] = grad * 0
 
+        self._gradBuffer_cards = sess.run(self._agent_network.cards_model_trainable_vars())
+        for ix, grad in enumerate(self._gradBuffer_cards):
+            self._gradBuffer_cards[ix] = grad * 0
+
     def accumulate_action_gradients(self, episode_states, episode_actions, episode_rewards):
         feed_dict = {self._agent_network.reward_holder: episode_rewards,
                      self._agent_network.action_holder: episode_actions,
+                     self._agent_network.state_in: np.vstack(episode_states)}
+
+        grads_act = self._sess.run(self._agent_network.gradients_act, feed_dict=feed_dict)
+        for idx, grad in enumerate(grads_act):
+            self._gradBuffer_act[idx] += grad
+
+    def accumulate_cards_gradients(self, episode_states, episode_actions, episode_cards, episode_rewards):
+        feed_dict = {self._agent_network.reward_holder: episode_rewards,
+                     self._agent_network.action_holder: episode_actions,
+                     self._agent_network.cards_holder: episode_cards,
                      self._agent_network.state_in: np.vstack(episode_states)}
 
         grads_act = self._sess.run(self._agent_network.gradients_act, feed_dict=feed_dict)
@@ -26,3 +41,9 @@ class PlayerTrainer:
         _ = self._sess.run(self._agent_network.update_batch_act, feed_dict=feed_dict)
         for ix, grad in enumerate(self._gradBuffer_act):
             self._gradBuffer_act[ix] = grad * 0
+
+    def update_cards_model(self):
+        feed_dict = dict(zip(self._agent_network.gradient_holders_cards, self._gradBuffer_cards))
+        _ = self._sess.run(self._agent_network.update_batch_cards, feed_dict=feed_dict)
+        for ix, grad in enumerate(self._gradBuffer_cards):
+            self._gradBuffer_cards[ix] = grad * 0

@@ -5,10 +5,12 @@ import Config as config
 from PlayerTrainer import PlayerTrainer
 import cheat_utils
 import numpy as np
+from PlayerNetwork import PlayerNetwork
 
 
 def main():
-    players = [Player(i) for i in range(config.num_players)]
+    player_network = PlayerNetwork(1e-3, 18, 3, 128)
+    players = [Player(i, player_network) for i in range(config.num_players)]
     init = tf.global_variables_initializer()
     with tf.Session() as sess:
         sess.run(init)
@@ -20,7 +22,7 @@ def main():
         rounds = []
         for ep in range(config.episodes):
             done, turn, pile_size, players_hands, current_hand, game_history, _, _ = env.reset()
-            plays=0
+            plays = 0
 
             illegal_c = 0
             while not done:
@@ -35,21 +37,25 @@ def main():
                 player.update_reward(reward)
 
                 if illegal_action:
-                    illegal_c +=1
+                    illegal_c += 1
                     print("illegal")
 
                 if (plays % 500 == 0 and plays != 0) or done:
                     for i in range(config.num_players):
                         ep_history = players[i].get_history()
-                        episode_states, episode_actions, episode_rewards, episode_length = \
+                        episode_states, episode_actions, episode_cards, episode_rewards, episode_length = \
                             cheat_utils.extract_episode_history(ep_history)
 
                         discounted_episode_rewards = cheat_utils.discount_rewards(episode_rewards, config.gamma)
 
-                        trainers[i].accumulate_action_gradients(episode_states, episode_actions, discounted_episode_rewards)
+                        trainers[i].accumulate_action_gradients(episode_states, episode_actions,
+                                                                discounted_episode_rewards)
+                        trainers[i].accumulate_cards_gradients(episode_states, episode_actions, episode_cards,
+                                                               discounted_episode_rewards)
 
                         # if i % update_frequency == 0 and i != 0:
                         trainers[i].update_action_model()
+                        trainers[i].update_cards_model()
 
                 if done:
                     winner = player._id
@@ -60,8 +66,9 @@ def main():
                     rounds.append(plays)
 
             if ep % 50 == 0 and ep > 0:
-                print("Illegal moves: ", np.mean(illegal_count[-50:]),". Rounds: ", np.mean(rounds[-50:]), ". Stats: ", np.sum(wins[-50:], axis=0))
-                x=1
+                print("Illegal moves: ", np.mean(illegal_count[-50:]), ". Rounds: ", np.mean(rounds[-50:]), ". Stats: ",
+                      np.sum(wins[-50:], axis=0))
+                x = 1
 
 
 if __name__ == '__main__':
